@@ -1,4 +1,4 @@
-# main.py  (FastAPI app)
+# main.py  (FastAPI app, Python 3.9 compatible)
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
@@ -17,7 +17,6 @@ from pydantic import BaseModel, EmailStr, field_validator
 from db import SessionLocal
 from models import User, BlinkEvent
 
-
 # ---------- Auth / JWT setup ----------
 SECRET_KEY = os.getenv(
     "SECRET_KEY",
@@ -27,7 +26,6 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 # Default timezone (used for stats windows etc.)
 try:
@@ -49,7 +47,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(
     data: dict,
-    expires_delta: timedelta | None = None,
+    expires_delta: Optional[timedelta] = None,
 ) -> str:
     to_encode = data.copy()
     expire = datetime.now(tz=DEFAULT_TZ) + (
@@ -76,11 +74,11 @@ class Token(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr
-    name: str | None = None
+    name: Optional[str] = None
     password: str
     consent_given: bool = False
     # New: capture timezone from user during registration
-    timezone: str | None = None  # e.g. "Asia/Kolkata", "America/New_York"
+    timezone: Optional[str] = None  # e.g. "Asia/Kolkata", "America/New_York"
 
     @field_validator("password")
     @classmethod
@@ -93,9 +91,9 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     email: EmailStr
-    name: str | None = None
+    name: Optional[str] = None
     consent_given: bool
-    timezone: str | None = None
+    timezone: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -109,7 +107,7 @@ class LoginBody(BaseModel):
 class BlinkEventIn(BaseModel):
     timestamp: datetime  # client sends ISO timestamp
     blink_delta: int = 1
-    session_id: str | None = None
+    session_id: Optional[str] = None
 
 
 class BlinkEventOut(BlinkEventIn):
@@ -121,7 +119,7 @@ class BlinkEventOut(BlinkEventIn):
 
 
 class BlinkBatchIn(BaseModel):
-    events: list[BlinkEventIn]
+    events: List[BlinkEventIn]
 
 
 class UserStats(BaseModel):
@@ -151,7 +149,7 @@ class BlinkTrends(BaseModel):
 
 
 # ---------- Time helpers ----------
-def now_for_user(user: User | None) -> datetime:
+def now_for_user(user: Optional[User]) -> datetime:
     """
     Return 'now' in the user's timezone if set, otherwise default timezone.
     This keeps all stats windows local to the user.
@@ -164,7 +162,7 @@ def now_for_user(user: User | None) -> datetime:
     return datetime.now(tz=tz)
 
 
-def parse_client_timestamp(ts: datetime, user: User | None) -> datetime:
+def parse_client_timestamp(ts: datetime, user: Optional[User]) -> datetime:
     """
     Normalize client-sent timestamp to an aware datetime in the user's timezone.
     - If ts is naive, assume it is already in user's local time and attach tz.
@@ -184,13 +182,11 @@ def parse_client_timestamp(ts: datetime, user: User | None) -> datetime:
 # ---------- FastAPI app ----------
 app = FastAPI(title="Wellness at Work API", version="2.0")
 
-
 # ----- CORS -----
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    # add your deployed web origin later, e.g.:
-    # "https://your-vercel-app.vercel.app",
+    # add your deployed web origin later
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -496,7 +492,7 @@ def export_blinks_csv(
         for e in events:
             yield f'{e.id},"{e.timestamp}",{e.blink_delta},"{e.session_id or ""}"\n'
 
-    filename = f"waw-blinks-{days}d-{datetime.now().strftime('%Y%m%d')}.csv"
+    filename = f"waw-blinks-{days}d-{datetime.now().strftime("%Y%m%d")}.csv"
 
     return StreamingResponse(
         generate_csv(),
