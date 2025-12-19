@@ -3,6 +3,7 @@
 /**
  * Base URL for the backend API.
  * Use NEXT_PUBLIC_API_BASE in .env.local for config; falls back to localhost:8000.
+ * Used for dashboard/data calls (not auth proxy).
  */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
@@ -53,13 +54,14 @@ async function postJson(url, body) {
   return { ok: true, data: parsed };
 }
 
-// ---- Auth ----
+// ---- Auth via Vercel API routes ----
 
 /**
  * Login user and return either { token } or { error }.
+ * Uses Next.js API route /api/login to avoid mixed content.
  */
 export async function login(email, password) {
-  const result = await postJson(`${API_BASE}/auth/login`, { email, password });
+  const result = await postJson(`/api/login`, { email, password });
   if (!result.ok) {
     return { error: result.error || "Login failed" };
   }
@@ -69,39 +71,27 @@ export async function login(email, password) {
 
 /**
  * Register a new user; returns either { user } or { error }.
+ * Uses Next.js API route /api/register to avoid mixed content.
  * timezone is an IANA string, e.g. "Asia/Kolkata".
  */
 export async function register(email, password, name, consent, timezone) {
-  const res = await fetch(`${API_BASE}/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email,
-      password,
-      name,
-      consent_given: consent,
-      timezone,
-    }),
+  const result = await postJson(`/api/register`, {
+    email,
+    password,
+    name,
+    consent_given: consent,
+    timezone,
   });
 
-  const text = await res.text();
-  let parsed = null;
-  try {
-    parsed = text ? JSON.parse(text) : null;
-  } catch {
-    parsed = null;
+  if (!result.ok) {
+    return {
+      error:
+        result.error ||
+        "Registration failed. Please check your details and try again.",
+    };
   }
 
-  if (!res.ok) {
-    console.error("Registration API error:", res.status, text);
-
-    const msg =
-      (parsed && parsed.detail) ||
-      "Registration failed. Please check your details and try again.";
-    return { error: msg };
-  }
-
-  return { user: parsed };
+  return { user: result.data };
 }
 
 // ---- Dashboard stats ----
