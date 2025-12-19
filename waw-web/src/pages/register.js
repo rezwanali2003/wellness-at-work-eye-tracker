@@ -1,7 +1,7 @@
 // src/pages/register.js
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { login, register } from "../lib/api";
+import { register } from "../lib/api";
 
 /**
  * Registration page for new users.
@@ -14,17 +14,18 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // New: user’s region / timezone (IANA string).
-  // You can prefill "Asia/Kolkata" but still require explicit confirmation.
+  // User’s region / timezone (IANA string).
   const [timezone, setTimezone] = useState("Asia/Kolkata");
 
   const [consent, setConsent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setInfo("");
 
     if (!name || !email || !password || !timezone) {
       setError("Name, email, password and region are required.");
@@ -34,15 +35,24 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       // Create account with timezone
-      await register(email, password, name, consent, timezone);
+      const result = await register(email, password, name, consent, timezone);
 
-      // Auto-login after successful registration
-      const token = await login(email, password);
-      localStorage.setItem("waw_token", token);
-      router.push("/dashboard");
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
+
+      // Do NOT auto-login; send user to login page
+      setInfo("Account created. Please sign in with your email and password.");
+      // Small delay so user sees the message, then redirect
+      setTimeout(() => {
+        router.push("/login");
+      }, 800);
     } catch (err) {
       console.error("Register error:", err);
-      setError(err.message || "Registration failed. Please try again.");
+      setError(
+        err.message || "Registration failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -83,6 +93,10 @@ export default function RegisterPage() {
 
           {error && (
             <p className="text-sm text-red-400 text-center">{error}</p>
+          )}
+
+          {info && !error && (
+            <p className="text-sm text-green-400 text-center">{info}</p>
           )}
 
           <div className="space-y-1">
@@ -131,7 +145,6 @@ export default function RegisterPage() {
               <option value="America/New_York">US (New York)</option>
               <option value="America/Los_Angeles">US (Los Angeles)</option>
               <option value="Asia/Singapore">Asia (Singapore)</option>
-              {/* You can expand this list or generate from a config */}
             </select>
             <p className="text-[11px] text-zinc-500">
               We align your blink patterns to your local day so mornings,
