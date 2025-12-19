@@ -1,0 +1,14 @@
+opencv-python
+mediapipe
+numpy
+fastapi
+uvicorn[standard]
+sqlalchemy
+psycopg2-binary
+python-jose
+passlib[bcrypt]
+pydantic
+python-multipart
+pydantic[email]
+tzdata
+bcrypt<4.1
