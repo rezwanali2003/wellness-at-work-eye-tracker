@@ -5,7 +5,7 @@ import requests
 
 
 # Base URL: prefer env var for cloud, fallback to local dev
-API_BASE = os.getenv("WAW_API_BASE", "http://127.0.0.1:8000")
+API_BASE = os.getenv("WAW_API_BASE", "http://16.171.137.237")
 
 
 class ApiError(Exception):

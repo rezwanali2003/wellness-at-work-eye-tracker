@@ -1,13 +1,6 @@
 // src/lib/api.js
 
 /**
- * Base URL for the backend API.
- * Use NEXT_PUBLIC_API_BASE in .env.local for config; falls back to localhost:8000.
- * Used for dashboard/data calls (not auth proxy).
- */
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-
-/**
  * Utility to build auth headers.
  */
 function authHeaders(token) {
@@ -54,14 +47,17 @@ async function postJson(url, body) {
   return { ok: true, data: parsed };
 }
 
-// ---- Auth via Vercel API routes ----
+// ---- Auth via backend proxy ----
 
 /**
  * Login user and return either { token } or { error }.
- * Uses Next.js API route /api/login to avoid mixed content.
+ * Uses Next.js API route /api/backend?path=auth/login to avoid mixed content.
  */
 export async function login(email, password) {
-  const result = await postJson(`/api/login`, { email, password });
+  const result = await postJson(`/api/backend?path=auth/login`, {
+    email,
+    password,
+  });
   if (!result.ok) {
     return { error: result.error || "Login failed" };
   }
@@ -71,11 +67,11 @@ export async function login(email, password) {
 
 /**
  * Register a new user; returns either { user } or { error }.
- * Uses Next.js API route /api/register to avoid mixed content.
+ * Uses /api/backend?path=auth/register to avoid mixed content.
  * timezone is an IANA string, e.g. "Asia/Kolkata".
  */
 export async function register(email, password, name, consent, timezone) {
-  const result = await postJson(`/api/register`, {
+  const result = await postJson(`/api/backend?path=auth/register`, {
     email,
     password,
     name,
@@ -97,7 +93,7 @@ export async function register(email, password, name, consent, timezone) {
 // ---- Dashboard stats ----
 
 export async function fetchDashboardStats(token) {
-  const res = await fetch(`${API_BASE}/api/user/me/stats`, {
+  const res = await fetch(`/api/backend?path=api/user/me/stats`, {
     headers: authHeaders(token),
   });
 
@@ -113,7 +109,11 @@ export async function fetchDashboardStats(token) {
 // ---- Blink history ----
 
 export async function fetchBlinkData(token, params = {}) {
-  const url = new URL(`${API_BASE}/api/user/me/blinks`);
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const url = new URL("/api/backend", origin || "http://localhost");
+
+  url.searchParams.set("path", "api/user/me/blinks");
 
   if (params.range) {
     url.searchParams.set("range_period", params.range);
@@ -146,10 +146,15 @@ export async function fetchBlinkData(token, params = {}) {
 export async function fetchTrends(token, period = "week") {
   const backendPeriod = period === "all" ? "month" : period;
 
-  const res = await fetch(
-    `${API_BASE}/api/user/me/trends?period=${backendPeriod}`,
-    { headers: authHeaders(token) },
-  );
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const url = new URL("/api/backend", origin || "http://localhost");
+  url.searchParams.set("path", "api/user/me/trends");
+  url.searchParams.set("period", backendPeriod);
+
+  const res = await fetch(url.toString(), {
+    headers: authHeaders(token),
+  });
 
   if (!res.ok) {
     const text = await res.text();
@@ -163,7 +168,10 @@ export async function fetchTrends(token, period = "week") {
 // ---- CSV export ----
 
 export async function exportBlinks(token, days = 30) {
-  const url = new URL(`${API_BASE}/api/user/me/blinks/export`);
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const url = new URL("/api/backend", origin || "http://localhost");
+  url.searchParams.set("path", "api/user/me/blinks/export");
   url.searchParams.set("format_type", "csv");
   url.searchParams.set("days", days);
 
