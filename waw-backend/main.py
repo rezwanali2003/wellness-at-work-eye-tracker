@@ -492,7 +492,7 @@ def export_blinks_csv(
         for e in events:
             yield f'{e.id},"{e.timestamp}",{e.blink_delta},"{e.session_id or ""}"\n'
 
-    filename = f"waw-blinks-{days}d-{datetime.now().strftime("%Y%m%d")}.csv"
+    filename = f"waw-blinks-{days}d-{datetime.now().strftime('%Y%m%d')}.csv"
 
     return StreamingResponse(
         generate_csv(),
