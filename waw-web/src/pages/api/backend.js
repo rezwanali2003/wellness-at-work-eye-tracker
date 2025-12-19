@@ -1,5 +1,6 @@
 // src/pages/api/backend.js
-const API_BASE = "http://16.171.137.237";
+// src/pages/api/backend.js
+const API_BASE = process.env.BACKEND_BASE
 
 export default async function handler(req, res) {
   // e.g. /api/backend?path=auth/login or path=api/user/me/stats
