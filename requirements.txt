@@ -12,3 +12,6 @@ python-multipart
 pydantic[email]
 tzdata
 bcrypt<4.1
+PyQt5
+requests
+psutil
