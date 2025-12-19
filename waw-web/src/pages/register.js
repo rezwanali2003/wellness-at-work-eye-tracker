@@ -22,6 +22,8 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
+  const desktopDownloadUrl = process.env.NEXT_PUBLIC_EYETRACKER_URL;
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -29,6 +31,11 @@ export default function RegisterPage() {
 
     if (!name || !email || !password || !timezone) {
       setError("Name, email, password and region are required.");
+      return;
+    }
+
+    if (!consent) {
+      setError("You need to agree to use anonymized blink counts.");
       return;
     }
 
@@ -42,17 +49,13 @@ export default function RegisterPage() {
         return;
       }
 
-      // Do NOT auto-login; send user to login page
-      setInfo("Account created. Please sign in with your email and password.");
-      // Small delay so user sees the message, then redirect
-      setTimeout(() => {
-        router.push("/login");
-      }, 800);
+      // Do NOT auto-login; show download + login options
+      setInfo(
+        "Account created. Download the desktop app to start tracking, or sign in to your dashboard."
+      );
     } catch (err) {
       console.error("Register error:", err);
-      setError(
-        err.message || "Registration failed. Please try again."
-      );
+      setError(err.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -96,8 +99,38 @@ export default function RegisterPage() {
           )}
 
           {info && !error && (
-            <p className="text-sm text-green-400 text-center">{info}</p>
+            <div className="space-y-3">
+              <p className="text-sm text-green-400 text-center">{info}</p>
+
+              <div className="flex flex-col gap-2">
+                {desktopDownloadUrl ? (
+                  <a
+                    href={desktopDownloadUrl}
+                    download
+                    className="w-full py-2 rounded bg-white text-black text-sm font-medium text-center"
+                  >
+                    Download desktop app
+                  </a>
+                ) : (
+                  <p className="text-xs text-red-400 text-center">
+                    Desktop download not available. Please contact support.
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="w-full py-2 rounded border border-zinc-600 text-sm"
+                >
+                  Go to login
+                </button>
+              </div>
+            </div>
           )}
+
+          {/* When info is shown, you can still allow editing fields if you want.
+              If you want to lock the form after success, you can disable inputs when info is set.
+           */}
 
           <div className="space-y-1">
             <label className="text-sm">Name</label>
@@ -147,8 +180,8 @@ export default function RegisterPage() {
               <option value="Asia/Singapore">Asia (Singapore)</option>
             </select>
             <p className="text-[11px] text-zinc-500">
-              We align your blink patterns to your local day so mornings,
-              work blocks and late sessions show up in the right place.
+              We align your blink patterns to your local day so mornings, work
+              blocks and late sessions show up in the right place.
             </p>
           </div>
 
