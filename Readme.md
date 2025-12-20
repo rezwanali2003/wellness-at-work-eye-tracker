@@ -306,10 +306,7 @@ python main.py
 
 ---
 
-# 📧 Internal Tester Access
-
-- ishaan80@gmail.com  
-- mehul.bhardwaj@outlook.com  
+  
 
 ---
 
